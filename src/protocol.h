@@ -19,7 +19,9 @@ enum Commands : uint8_t {
 	CMD_SETUP_PID,
 	CMD_PRINT,
 	CMD_MOVE_Y,
-	CMD_SETUP_LASER
+	CMD_SETUP_LASER,
+	CMD_SET_PARAM,
+	CMD_FLASH,
 };
 enum Codes : uint16_t {
 	CODE_OK,
@@ -66,6 +68,19 @@ enum LaserMode : uint16_t {
 struct setup_laser_t {
 	LaserMode mode:16;
 	uint16_t param;
+} __attribute__((packed));
+
+enum ParamID : uint8_t {
+	PARAM_STEPPER_MAX_SPEED,
+	PARAM_STEPPER_START_SPEED,
+	PARAM_STEPPER_ACCEL,
+	PARAM_STEPPER_DECCEL,
+	PARAM_STEPPER_STOP_STEPS,
+};
+
+struct set_param_t {
+	ParamID  param;
+	uint32_t value;
 } __attribute__((packed));
 
 class Protocol {

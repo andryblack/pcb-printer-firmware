@@ -11,6 +11,35 @@
 
 #include <cstring>
 
+static void start_bootloader() {
+	static const uint32_t sys_mem_base = 0x1FFFF000;
+	// disable all per
+	RCC->APB2ENR = 0;
+	RCC->AHBENR = 0;
+	
+#define SET_SYSCLOCK(SRC) MODIFY_REG(RCC->CFGR,RCC_CFGR_SW,SRC)
+
+	__disable_irq();
+	// hsi
+	SET_BIT(RCC->CR, RCC_CR_HSION);
+  	while((RCC->CR & RCC_CR_HSIRDY)==0) {__NOP();}
+  	SET_SYSCLOCK(RCC_CFGR_SW_HSI);
+
+  	// disable pll
+  	CLEAR_BIT(RCC->CR,	RCC_CR_PLLON);
+  	// disable hse
+  	CLEAR_BIT(RCC->CR, RCC_CR_HSEON);
+
+  	SysTick->CTRL = 0;
+    SysTick->LOAD = 0;
+    SysTick->VAL = 0;
+
+    // set stack
+  	__set_MSP(*(uint32_t *)sys_mem_base);
+  	// jump
+  	((void (*)()) (*((uint32_t *)(sys_mem_base + 4))))();
+}
+
 Protocol::SlipDecoderImpl::SlipDecoderImpl(Protocol* self,uint8_t* data,uint16_t max_size) : SlipDecoder(data,max_size),
 	m_self(self) {}
 
@@ -200,6 +229,18 @@ void Protocol::process_cmd(uint8_t cmd,const void* data,uint16_t data_size) {
 				Laser::setup_pwm(laser->param);
 			}
 			send_resp(cmd,CODE_OK);
+		} break;
+		case CMD_SET_PARAM: {
+			if (data_size < sizeof(set_param_t)) {
+				send_resp(cmd,CODE_INVALID_DATA);
+				return;
+			}
+			const set_param_t* param = static_cast<const set_param_t*>(data);
+			Stepper::set_param(param->param,param->value);
+			send_resp(cmd,CODE_OK);
+		} break;
+		case CMD_FLASH: {
+			start_bootloader();
 		} break;
 		default:
 			DBG("unknown cmd");

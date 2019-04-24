@@ -4,6 +4,7 @@ include config.mk
 .PHONY: project clean flash distr
 
 FIRMWARE=bin/pcb-printer.elf
+GDB=$(TOOLCHAINPATH)/bin/arm-none-eabi-gdb
 
 all : build-firmware
 
@@ -31,9 +32,20 @@ distclean:
 flash:
 		openocd  -f flash.cfg 
 
+flash-bmp:
+		$(GDB) -nx --batch  \
+			-ex "target extended-remote $(BMP_PORT)" \
+			-ex "set remotetimeout 4000" \
+			-ex "monitor version" \
+			-ex "monitor swdp_scan" \
+			-ex "attach 1" \
+			-ex "load" \
+			-ex 'compare-sections' \
+			-ex 'kill' \
+			$(FIRMWARE)
 
 debug:
-		$(TOOLCHAINPATH)/bin/arm-none-eabi-gdb $(FIRMWARE) \
+		$(GDB) $(FIRMWARE) \
 			--eval-command="target extended-remote :3333" \
 			--eval-command="set remotetimeout 2000" \
 			--eval-command="monitor arm semihosting enable" \

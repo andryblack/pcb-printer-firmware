@@ -54,3 +54,16 @@ uint8_t CRC8::update(uint8_t crc,const void* data,uint16_t size) {
 uint8_t CRC8::end(uint8_t d) {
 	return 0xFF - d;
 }
+
+#ifdef TEST
+#include <stdio.h>
+int main(int argc,char** argv) {
+    uint8_t data[] = {0x2f,0x00,0x06,0x00,0xcf,0x04,0x27,0x0a,0x00,0x00,0x52};
+    uint8_t crc = CRC8::begin();
+    crc = CRC8::update(crc,data,4);
+    crc = CRC8::update(crc,data+4,6);
+    crc = CRC8::end(crc);
+    printf("%02x/%02x\n", (int)crc, (int)CRC8::calc(data,sizeof(data)-1) );
+    return 0;
+}
+#endif

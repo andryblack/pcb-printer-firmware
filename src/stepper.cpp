@@ -3,10 +3,13 @@
 
 int32_t Stepper::pos = 0;
 
-static const int32_t max_speed = 700;
-static const int32_t min_speed = 50;
-static const int32_t acceleration = 2;
-static const int32_t speed_down_steps = 100;
+static uint32_t max_speed = 700;
+static uint32_t min_speed = 50;
+static uint32_t acceleration = 700;
+static uint32_t	decceleration = 1200;
+static uint32_t speed_down_steps = 200;
+
+static const uint32_t STEPPER_CNT = 256;
 
 uint32_t get_ms_timer();
 
@@ -16,21 +19,31 @@ static volatile enum State {
 } state = S_NONE;
 
 static int32_t target = 0;
-static int32_t speed = min_speed;
+static uint32_t speed = min_speed;
 static int32_t dir = 0;
 static bool dir_config = false;
-static uint32_t last_ms = 0;
 
-static int32_t _abs(int32_t dif) {
-	return dif < 0 ? -dif : dif;
+static inline uint32_t _abs(int32_t dif) {
+	return dif < 0 ? uint32_t(-dif) : uint32_t(dif);
 }
 
-static uint32_t speed_to_arr(int32_t speed) {
-	int32_t res = STEPPER_FREQ / speed;
-	if (res < 4) {
-		return 4;
+static volatile uint32_t time_per_step = 0;
+static volatile uint32_t move_time = 0;
+static uint32_t last_move_time = 0;
+
+static inline void set_speed( uint32_t speed ) {
+	time_per_step = 1000000 / speed;
+	timer_stepper::configure( timer_stepper::clk/speed/STEPPER_CNT - 1, STEPPER_CNT - 1 );
+}
+
+void Stepper::set_param(ParamID param,uint32_t value) {
+	switch (param) {
+		case PARAM_STEPPER_MAX_SPEED: 	max_speed = value; break;
+		case PARAM_STEPPER_START_SPEED:	min_speed = value; break;
+		case PARAM_STEPPER_ACCEL:		acceleration = value; break;
+		case PARAM_STEPPER_DECCEL:		decceleration = value; break;
+		case PARAM_STEPPER_STOP_STEPS:	speed_down_steps = value; break;
 	}
-	return res - 1;
 }
 
 void Stepper::init() {
@@ -42,12 +55,12 @@ void Stepper::init() {
 	pin_stepper_enable::set();
 	timer_stepper::enable_clock();
 	timer_stepper::get()->CR1 |= TIM_CR1_ARPE | TIM_CR1_URS;
-	timer_stepper::configure(timer_stepper::clk/STEPPER_FREQ-1,speed_to_arr(min_speed));
+	set_speed(min_speed);
 	timer_stepper::configure_pwm(STEPPER_PWM_CHANNEL);
 	timer_stepper::set_pwm(STEPPER_PWM_CHANNEL,2);
 
 	timer_stepper::get()->DIER = TIM_DIER_CC2IE;
-	timer_stepper::get()->CCR2 = 3;
+	timer_stepper::get()->CCR2 = STEPPER_CNT/4;
 
 	NVIC_SetPriority (STEPPER_TIMER_IRQn,STEPPER_TIMER_IRQ_PRI);		
 	NVIC_EnableIRQ(STEPPER_TIMER_IRQn);	
@@ -84,42 +97,52 @@ void Stepper::move(int32_t p) {
 		return;
 	}
 	pin_stepper_enable::clear();
-	timer_stepper::get()->ARR = speed_to_arr(speed);
+	set_speed( speed );
 	timer_stepper::get()->CNT = 0;
 	timer_stepper::get()->EGR = TIM_EGR_UG;
-	last_ms = get_ms_timer();
+	move_time = last_move_time = 0;
 	state = S_MOVE;
 	timer_stepper::start();
 }
 
+
 void Stepper::process() {
 	if (state == S_MOVE) {
-		uint32_t now = get_ms_timer();
-		if ((now-last_ms)>=10) {
-			last_ms = now;
-			if (_abs(target-Stepper::pos) < speed_down_steps) {
-				speed -= acceleration * 4;
+		uint32_t now = move_time;
+		uint32_t dt = now - last_move_time;
+		if (_abs(target-Stepper::pos) < speed_down_steps) {
+			uint32_t deccel = decceleration * dt / 1000000; // x/1000 * us  
+			if (deccel) {
+				last_move_time = now;
+				if (speed > deccel) {
+					speed -= deccel;
+				} else {
+					speed = 0;
+				}
 				if (speed < min_speed) {
 					speed = min_speed;
 				}
-				timer_stepper::get()->ARR = speed_to_arr(speed);
-			} else if (speed < max_speed) {
-				speed += acceleration;
+				set_speed(speed);
+			}
+		} else if (speed < max_speed) {
+			uint32_t accel = acceleration * dt / 1000000;
+			if (accel) {
+				last_move_time = now;
+				speed += acceleration * dt / 1000000;
 				if (speed > max_speed) {
 					speed = max_speed;
 				}
-				timer_stepper::get()->ARR = speed_to_arr(speed);
+				set_speed(speed);
 			}
 		}
 	}
 }
 
 void process_move() {
-	Stepper::pos = Stepper::pos + dir;
+	Stepper::pos += dir;
 	if (state == S_MOVE) {
 		if (Stepper::pos == target) {
-			timer_stepper::stop();
-			state = S_NONE;
+			Stepper::stop();
 		} 
 	}
 }
@@ -129,6 +152,7 @@ extern "C" void STEPPER_TIMER_IRQ() {
 	__IO uint32_t sr = timer->SR;
 	timer->SR = sr & ~(TIM_SR_CC2IF);
 	if (sr&TIM_SR_CC2IF) {
+		move_time += time_per_step;
 		process_move();
 	} 
 }

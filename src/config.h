@@ -41,7 +41,6 @@ typedef StaticTimer<TimerTIM3> timer_stepper;
 typedef StaticPin<PortA,6> pin_stepper_step;
 typedef StaticPin<PortA,7> pin_stepper_dir;
 typedef StaticPin<PortA,5> pin_stepper_enable;
-#define STEPPER_FREQ 20000
 #define STEPPER_PWM_CHANNEL 1
 
 #define STEPPER_TIMER_IRQn TIM3_IRQn
