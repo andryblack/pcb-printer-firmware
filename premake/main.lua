@@ -53,6 +53,8 @@ function stm32_project( name , prj_ld_config )
 		postbuildcommands {
 			gcc.gettoolname(nil,'strip') .. " -s %{cfg.targetdir}/"..name..".elf -o  %{cfg.targetdir}/"..name..".strip.elf",
   			gcc.gettoolname(nil,'objcopy') .. " -O binary %{cfg.targetdir}/"..name..".strip.elf %{cfg.targetdir}/"..name..".bin",
+  			gcc.gettoolname(nil,'objcopy') .. " -O ihex %{cfg.targetdir}/"..name..".strip.elf %{cfg.targetdir}/"..name..".hex",
+  			
   			--gcc.gettoolname(nil,'objdump') .. " -h %{cfg.targetdir}/bootloader.strip.elf",
   			gcc.gettoolname(nil,'objdump') .. " -d -S -s %{cfg.targetdir}/"..name..".elf > %{cfg.targetdir}/"..name..".asm"
 		}
