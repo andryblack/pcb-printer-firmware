@@ -9,6 +9,8 @@
 typedef StaticPin<PortB,6> pin_enc_a;
 typedef StaticPin<PortB,7> pin_enc_b;
 
+typedef StaticPin<PortA,3> usb_pull_pin;
+typedef StaticPin<PortC,13> test_led_pin;
 
 typedef StaticTimer<TimerTIM4>  timer_enc;
 #define ENC_TIMER_IRQn TIM4_IRQn

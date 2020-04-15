@@ -13,7 +13,12 @@
 #include "controller.h"
 #include "protocol.h"
 #include "stepper.h"
+
+#if defined(USE_USB_COM)
+#include "usb/cdc/usb_cdc.h"
+#else
 #include "uart.h"
+#endif
 
 #define NVIC_PRIORITYGROUP_4         ((uint32_t)0x00000003) /*!< 4 bits for pre-emption priority
                                                                  0 bits for subpriority */
@@ -37,13 +42,82 @@ uint32_t get_ms_timer() { return _st_ticks; }
 
 
 
+#ifdef USE_USB_COM
+class USB_console : public USB_CDC, public Protocol {
+private:
+	volatile bool m_transmit_active;
+	uint8_t m_rx_buffer[256];
+	volatile uint8_t m_rx_wpos;
+	uint8_t m_rx_rpos;
 
+	uint8_t cdc_rx_read() {
+		return m_rx_buffer[m_rx_rpos++];
+	}
+
+	bool cdc_rx_empty() const {
+		return m_rx_wpos == m_rx_rpos;
+	}
+public:
+	void init() {
+		m_transmit_active = false;
+		usb_pull_pin::configure_output_pp();
+		usb_pull_pin::set();
+
+		USB_CDC::init();
+	}
+	virtual uint16_t send_data(const void* data,uint16_t size) {
+		m_transmit_active = true;
+		uint16_t len = data_transmit(static_cast<const uint8_t*>(data),size);
+		return len;
+	}
+	virtual void on_data_transmit() {
+		m_transmit_active = false;
+	}
+	virtual void on_data_received(const uint8_t* data,uint32_t size) {
+		test_led_pin::toggle();
+		for (uint32_t i=0;i<size;++i) {
+			/// @todo check overflow ??
+			m_rx_buffer[m_rx_wpos++] = data[i];
+		}
+	}
+	void process_rx() {
+		while (!cdc_rx_empty()) {
+			on_rx_byte(cdc_rx_read());
+		}
+	}
+	void process() {
+		if (!m_transmit_active) {
+			Protocol::process();
+		}
+		process_rx();
+	}
+};
+static USB_console com_protocol;
+#else
 static UART com_uart(USART1);
 
 class UART_Protocol : public Protocol {
 public:
+	void init() {
+		Pin(GPIOA,9).configure_af_pp();
+		Pin(GPIOA,10).configure_input_f();
+
+		SET_BIT(RCC->APB2ENR, RCC_APB2ENR_USART1EN);
+		volatile uint32_t tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_USART1EN);
+		(void)tmpreg;
+
+		NVIC_SetPriority(USART1_IRQn, 0);
+		NVIC_EnableIRQ(USART1_IRQn);
+		
+		com_uart.configure_8n1(115200);
+		com_uart.start_rx_it();
+
+	}
 	void process() {
-		Protocol::process();
+		if (com_uart.tx_empty()) {
+			Protocol::process();
+		}
+		process_rx();
 	}
 	virtual uint16_t send_data(const void* data,uint16_t size) {
 		return com_uart.transmit(static_cast<const uint8_t*>(data),size);
@@ -55,8 +129,20 @@ public:
 	}
 };
 
-static UART_Protocol uart_protocol;
+static UART_Protocol com_protocol;
 
+extern "C" void USART1_IRQHandler(void)
+{
+	// __IO uint32_t sr = USART1->SR;
+	// if (sr & USART_SR_RXNE) {
+	// 	__IO uint32_t tmpreg = USART1->DR;
+	// 	//uart_protocol.on_rx_byte(tmpreg);
+	// 	//sr = USART1->SR;
+	// 	USART1->DR = tmpreg;
+	// } 
+	com_uart.on_irq();
+}
+#endif
 
 
 extern "C" void SystemInit() {
@@ -140,21 +226,8 @@ extern "C" int main() {
 
 	NVIC_SetPriority(SysTick_IRQn, 7);
 
-
-
-	Pin(GPIOA,9).configure_af_pp();
-	Pin(GPIOA,10).configure_input_f();
-
-	SET_BIT(RCC->APB2ENR, RCC_APB2ENR_USART1EN);
-	tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_USART1EN);
-	(void)tmpreg;
-
-	NVIC_SetPriority(USART1_IRQn, 0);
-	NVIC_EnableIRQ(USART1_IRQn);
-	
-	com_uart.configure_8n1(115200);
-	com_uart.start_rx_it();
-
+	test_led_pin::configure_output_pp();
+	test_led_pin::clear();
 
 	Encoder::init();
 	
@@ -165,32 +238,21 @@ extern "C" int main() {
 
 	Encoder::set_zero();
 
+	com_protocol.init();
 	//DBG("started\n");
-
+	test_led_pin::set();
 	
 	while (true) {
 		
 		Controller::process();
-		if (com_uart.tx_empty()) {
-			uart_protocol.process();
-		}
-		uart_protocol.process_rx();
+		com_protocol.process();
+
 	}
 
 	return 0;
 }
 
-extern "C" void USART1_IRQHandler(void)
-{
-	// __IO uint32_t sr = USART1->SR;
-	// if (sr & USART_SR_RXNE) {
-	// 	__IO uint32_t tmpreg = USART1->DR;
-	// 	//uart_protocol.on_rx_byte(tmpreg);
-	// 	//sr = USART1->SR;
-	// 	USART1->DR = tmpreg;
-	// } 
-	com_uart.on_irq();
-}
+
 
 extern "C" void HardFault_Handler() {
 	while(true){__NOP();}

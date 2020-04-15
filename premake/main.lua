@@ -18,8 +18,8 @@ function stm32_solution( name )
 
 		-- cmsis
 		includedirs{
-			path.join(_WORKING_DIR,'CMSIS/Include'),
-			path.join(_WORKING_DIR,'CMSIS/STM32' .. stm32_chip.f .. '/Include') 
+			path.join(_WORKING_DIR,'CMSIS/include'),
+			path.join(_WORKING_DIR,'CMSIS/STM32' .. stm32_chip.f .. '/include') 
 		}
 
 		configuration('debug')
@@ -36,8 +36,8 @@ function stm32_project( name , prj_ld_config )
 		includedirs{path.join(_WORKING_DIR,'system') }
 
 		files{
-			path.join(_WORKING_DIR,'CMSIS/Include/*.h'),
-			path.join(_WORKING_DIR,'CMSIS/STM32' .. stm32_chip.f .. '/Include/*.h'),
+			path.join(_WORKING_DIR,'CMSIS/include/*.h'),
+			path.join(_WORKING_DIR,'CMSIS/STM32' .. stm32_chip.f .. '/include/*.h'),
 			path.join(_WORKING_DIR,'CMSIS/STM32' .. stm32_chip.f .. '/src/*.c'),
 			path.join(_WORKING_DIR,'CMSIS/STM32' .. stm32_chip.f .. '/src/startup_stm32'..stm32_chip.low_name..'.s'),
 		}

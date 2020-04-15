@@ -5,13 +5,14 @@ include config.mk
 
 FIRMWARE=bin/pcb-printer.elf
 GDB=$(TOOLCHAINPATH)/bin/arm-none-eabi-gdb
+COMVARIANT?=serial
 
 all : build-firmware
 
 build/Makefile : project
 
 project:
-		premake5 --scripts=premake --chip=STM32F103C8T6 --toolchain_path=${TOOLCHAINPATH} arm_make 
+		premake5 --scripts=premake --chip=STM32F103C8T6 --toolchain_path=${TOOLCHAINPATH} --com=${COMVARIANT} arm_make 
 	
 		
 	
