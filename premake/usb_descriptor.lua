@@ -130,7 +130,7 @@ local function config_interface( f, offset, name, desc )
 			type = 'USB_DESC_TYPE_INTERFACE',
 			'bInterfaceNumber : ' .. desc.interface_num .. ',',
 			'bAlternateSetting : ' .. (desc.alt_num or 0) .. ',',
-			'bNumEndpoints : ' .. (desc.numendpoints or 0) .. ',',
+			'bNumEndpoints : ' .. (desc.numendpoints or (desc.endpoints and #desc.endpoints) or 0) .. ',',
 			'bInterfaceClass : ' .. 'USB_INTERFACE_CLASS_' .. desc.class .. ',',
 			'bInterfaceSubClass : ' .. desc.class .. '_SUBCLASS_' .. desc.subclass .. ',',
 			'bInterfaceProtocol : ' .. desc.class .. '_PROTOCOL_' .. desc.protocol .. ',',
