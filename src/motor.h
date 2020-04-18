@@ -8,7 +8,7 @@ struct Motor {
 	static int32_t target_speed;
 	static bool write_speed;
 	static uint32_t write_speed_pos;
-
+	
 	static enum State {
 		S_STOPPED,
 		S_MOVE,

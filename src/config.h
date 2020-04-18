@@ -5,6 +5,8 @@
 #include "hw_config.h"
 #include "timer.h"
 
+//#define USE_FAST_MOTOR_CHOPPING
+
 
 typedef StaticPin<PortB,6> pin_enc_a;
 typedef StaticPin<PortB,7> pin_enc_b;
@@ -17,10 +19,17 @@ typedef StaticTimer<TimerTIM4>  timer_enc;
 #define ENC_TIMER_IRQ TIM4_IRQHandler
 #define ENC_TIMER_IRQ_PRI 1
 
+#if defined(USE_FAST_MOTOR_CHOPPING)
+typedef StaticPin<PortA,8> pin_motor_a;
+typedef StaticPin<PortA,9> pin_motor_b;
+#define MOTOR_A_PWM_CHANNEL 1
+#define MOTOR_B_PWM_CHANNEL 2
+#else
 typedef StaticPin<PortB,13> pin_motor_a;
 typedef StaticPin<PortB,14> pin_motor_b;
 typedef StaticPin<PortA,8> pin_motor_enable;
 #define MOTOR_PWM_CHANNEL 1
+#endif
 
 
 typedef StaticTimer<TimerTIM1> timer_motor;
