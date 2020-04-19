@@ -16,11 +16,11 @@ enum Commands : uint8_t {
 	CMD_READ_SPEED,
 	CMD_ZERO_X,
 	CMD_ZERO_Y,
-	CMD_SETUP_PID,
+	CMD_SETUP_MOTOR,
 	CMD_PRINT,
 	CMD_MOVE_Y,
 	CMD_SETUP_LASER,
-	CMD_SET_PARAM,
+	CMD_SET_STEPPER_PARAM,
 	CMD_FLASH,
 };
 enum Codes : uint16_t {
@@ -36,10 +36,12 @@ struct move_x_t {
 static const uint16_t FLAG_WRITE_SPEED = (1<<0);
 static const uint16_t FLAG_WAIT_MOVE = (1<<1);
 
-struct setup_pid_t {
+struct setup_motor_t {
 	float P;
 	float I;
 	float D;
+	uint32_t min_pwm;
+	uint32_t max_pwm;
 } __attribute__((packed));
 
 struct print_t {

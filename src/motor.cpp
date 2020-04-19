@@ -11,8 +11,8 @@
 
 static const uint32_t pwm_resolution = 1024;
 static const uint32_t pwm_freq = 20000;
-static const int32_t min_pwm = 300;
-static const int32_t max_pwm = 1000;
+static int32_t min_pwm = 100;
+static int32_t max_pwm = 1000;
 
 
 static float K_prp = 0.0525f;
@@ -50,6 +50,10 @@ void Motor::setup_PID(float P,float I,float D) {
 	K_prp = P;
 	K_int = I;
 	K_dif = D;
+}
+void Motor::setup_PWM(uint32_t min,uint32_t max) {
+	min_pwm = min;
+	max_pwm = max;
 }
 static void reset_pid() {
 	I_value = 0;

@@ -187,13 +187,14 @@ void Protocol::process_cmd(uint8_t cmd,const void* data,uint16_t data_size) {
 			Stepper::set_zero();
 			send_resp(cmd,CODE_OK);
 		} break;
-		case CMD_SETUP_PID: {
-			if (data_size < sizeof(setup_pid_t)) {
+		case CMD_SETUP_MOTOR: {
+			if (data_size < sizeof(setup_motor_t)) {
 				send_resp(cmd,CODE_INVALID_DATA);
 				return;
 			}
-			const setup_pid_t* pid = static_cast<const setup_pid_t*>(data);
-			Motor::setup_PID(pid->P,pid->I,pid->D);
+			const setup_motor_t* p = static_cast<const setup_motor_t*>(data);
+			Motor::setup_PID(p->P,p->I,p->D);
+			Motor::setup_PWM(p->min_pwm,p->max_pwm);
 			send_resp(cmd,CODE_OK);
 		} break;
 		case CMD_PRINT: {
@@ -230,7 +231,7 @@ void Protocol::process_cmd(uint8_t cmd,const void* data,uint16_t data_size) {
 			}
 			send_resp(cmd,CODE_OK);
 		} break;
-		case CMD_SET_PARAM: {
+		case CMD_SET_STEPPER_PARAM: {
 			if (data_size < sizeof(set_param_t)) {
 				send_resp(cmd,CODE_INVALID_DATA);
 				return;

@@ -28,6 +28,7 @@ struct Motor {
 
 	static void start_write_speed();
 	static void setup_PID(float P,float I,float D);
+	static void setup_PWM(uint32_t min,uint32_t max);
 };
 
 #endif /*_MOTOR_H_INCLUDED_*/
