@@ -104,8 +104,8 @@ function m.generate( file , config )
     /* Remove information from the standard libraries */
     /DISCARD/ :
   	{
-      ${STM32_LIBS}
-     	libgcc.a ( * )
+      /* ${STM32_LIBS} */
+     	libgcc.a ( * ) 
   	}
     .ARM.attributes 0 : { *(.ARM.attributes) }
   }

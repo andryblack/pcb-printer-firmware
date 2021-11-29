@@ -34,6 +34,10 @@ function stm32_project( name , prj_ld_config )
 		targetdir(path.join(_WORKING_DIR,'bin'))
 		targetextension( '.elf' )
 		includedirs{path.join(_WORKING_DIR,'system') }
+		linkoptions{
+			'--specs=nano.specs',
+			'--specs=nosys.specs'
+		}
 
 		files{
 			path.join(_WORKING_DIR,'CMSIS/include/*.h'),
@@ -64,7 +68,7 @@ function stm32_project( name , prj_ld_config )
 
 		os.mkdir(path.join(_WORKING_DIR,'build','ld'))
 		local ld_config = stm32_chip.ld_config
-		ld_config.STM32_LIBS = 'libc_nano.a (*)'
+		ld_config.STM32_LIBS = ''--'libc_nano.a (*)'
 		if prj_ld_config then
 			ld_config = setmetatable(prj_ld_config,{
 				__index = ld_config

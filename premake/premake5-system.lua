@@ -57,7 +57,7 @@ function gcc.getcppflags( cfg )
 		)
 end
 local function opt_flags( cfg , cxx )
-	local cmn = {'-fno-exceptions','-nodefaultlibs'}
+	local cmn = {'-fno-exceptions'}
 	if cxx then
 		table.insert(cmn,'-fno-rtti')
 	end
@@ -77,7 +77,6 @@ function gcc.getldflags(cfg)
 	return table.join(
 		chip.flags.ld,
 		{
-			'-nostdlib',
 			'-Wl,--gc-sections',
 			'-u _printf_float',
 			'-u _sprintf_float',

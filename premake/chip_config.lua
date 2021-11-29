@@ -65,7 +65,6 @@ local chip_type = {
 local f1_flags = {
 	c = {
 		'-mthumb',
-		'-fno-builtin',
 		'-mcpu=cortex-m3',
 		'-Wall',
 		'-std=gnu99',
@@ -78,7 +77,6 @@ local f1_flags = {
 	},
 	cxx = {
 		'-mthumb',
-		'-fno-builtin',
 		'-mcpu=cortex-m3',
 		'-Wall',
 		'-std=c++11',
@@ -98,8 +96,6 @@ local f1_flags = {
 		'-x','assembler-with-cpp'
 	},
 	ld = {
-		--'--gc-sections',
-		--'-nostdlib',
 		'-Wl,--gc-sections',
 		'-mthumb',
 		'-mcpu=cortex-m3',
